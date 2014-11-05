@@ -50,6 +50,8 @@ public class RoomsFragment extends Fragment {
     JSONArray namesArray;
     JSONArray roomIds;
     ArrayList<SingleRoom> rooms = new ArrayList<SingleRoom>();
+    int roomCheckedIn;
+    boolean checkedIn;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -201,6 +203,13 @@ public class RoomsFragment extends Fragment {
                     roomData = new JSONObject(output);
                     namesArray = roomData.getJSONArray("roomnames");
                     roomIds = roomData.getJSONArray("roomIds");
+                    roomCheckedIn = roomData.getInt("checkin");
+                    if(roomCheckedIn!=0){
+                        checkedIn =true;
+                    }
+                    else{
+                        checkedIn = false;
+                    }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -259,6 +268,24 @@ public class RoomsFragment extends Fragment {
             }
             SingleRoom temp = rooms.get(i);
             holder.name.setText(temp.name);
+            if(checkedIn) {
+                try {
+                    Log.d("roomCheckedIn", String.valueOf(roomCheckedIn));
+                    Log.d("roomCheckedIn1", String.valueOf(Integer.parseInt(String.valueOf(roomIds.get(i)))));
+                    if (roomCheckedIn == Integer.parseInt(String.valueOf(roomIds.get(i)))) {
+                        holder.checkInButton.setVisibility(View.VISIBLE);
+                        holder.checkInButton.setText("Check Out");
+                    }
+                    else{
+                        holder.checkInButton.setVisibility(View.INVISIBLE);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                holder.checkInButton.setVisibility(View.VISIBLE);
+            }
             final int finalposition = i;
             final ViewHolder finalHolder = holder;
             holder.checkInButton.setOnClickListener(new View.OnClickListener() {
@@ -270,6 +297,7 @@ public class RoomsFragment extends Fragment {
                                 @Override
                                 protected void onPostExecute(String v) {
                                     finalHolder.checkInButton.setText("Check Out");
+                                    RoomsFragment.this.refresh();
 
                                 }
                             }.execute(ActivityMain.ServerURL + "/api/checkin/" + ActivityMain.userId + "/" + String.valueOf(roomIds.get(finalposition)), "");
@@ -282,6 +310,7 @@ public class RoomsFragment extends Fragment {
                                 @Override
                                 protected void onPostExecute(String v) {
                                     finalHolder.checkInButton.setText("Check In");
+                                    RoomsFragment.this.refresh();
                                 }
                             }.execute(ActivityMain.ServerURL + "/api/checkout/" + ActivityMain.userId, "");
 
