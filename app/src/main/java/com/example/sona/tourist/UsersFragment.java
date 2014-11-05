@@ -36,6 +36,7 @@ public class UsersFragment extends Fragment {
     ListView list;
     JSONObject usersData;
     JSONArray usersList;
+    JSONArray whereUsers;
 
     int roomNumber;
     ArrayList<SingleUser> userArrayList = new ArrayList<SingleUser>();
@@ -87,8 +88,10 @@ public class UsersFragment extends Fragment {
     }
     class SingleUser{
         String name;
-        public SingleUser(String name){
+        int where;
+        public SingleUser(String name, int where){
             this.name = name;
+            this.where = where;
         }
     }
     class UserAdapter extends BaseAdapter {
@@ -101,13 +104,14 @@ public class UsersFragment extends Fragment {
                     try {
                         usersData = new JSONObject(output);
                         usersList = usersData.getJSONArray("userNames");
+                        whereUsers = usersData.getJSONArray("whereUsers");
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
                     userArrayList.clear();
                     for(int i=0;i<usersList.length();i++){
                         try {
-                            userArrayList.add(new SingleUser(String.valueOf(usersList.get(i))));
+                            userArrayList.add(new SingleUser(String.valueOf(usersList.get(i)), Integer.parseInt(String.valueOf(whereUsers.get(i)))));
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -135,10 +139,12 @@ public class UsersFragment extends Fragment {
             return i;
         }
         class ViewHolder {
-            TextView id;
+            TextView name;
+            TextView whetherCheckedIn;
 
             ViewHolder(View v) {
-                id = (TextView) v.findViewById(R.id.userId);
+                name = (TextView) v.findViewById(R.id.userName);
+                whetherCheckedIn = (TextView) v.findViewById(R.id.whetherCheckedIn);
             }
         }
         @Override
@@ -154,7 +160,14 @@ public class UsersFragment extends Fragment {
                 holder = (ViewHolder) row.getTag();
             }
             SingleUser temp = userArrayList.get(i);
-            holder.id.setText(String.valueOf(temp.name));
+            holder.name.setText(String.valueOf(temp.name));
+            if(temp.where==roomNumber) {
+                holder.whetherCheckedIn.setText("In");
+            }
+            else{
+                holder.whetherCheckedIn.setText("Out");
+
+            }
             return row;
         }
     }
