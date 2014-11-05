@@ -3,6 +3,7 @@ package com.example.sona.tourist;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -17,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -46,6 +48,7 @@ public class RoomsFragment extends Fragment {
     ListView list;
     JSONObject roomData;
     JSONArray namesArray;
+    JSONArray roomIds;
     ArrayList<SingleRoom> rooms = new ArrayList<SingleRoom>();
 
     // TODO: Rename and change types of parameters
@@ -112,7 +115,7 @@ public class RoomsFragment extends Fragment {
                                 imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
                                 RoomsFragment.this.refresh();
                             }
-                        }.execute(ActivityMain.ServerURL+"/api/rooms/create", postData);
+                        }.execute(ActivityMain.ServerURL+"/api/rooms/create/"+ActivityMain.userId, postData);
 
                     }
                 });
@@ -151,6 +154,32 @@ public class RoomsFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_rooms, container, false);
         setHasOptionsMenu(true);
         list = (ListView) view.findViewById(R.id.roomsList);
+        list.setClickable(true);
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                //ActivityUser.from_where = "hahahha";
+                //Log.d("herehere",ActivityUser.from_where);
+                int roomtoopen = 0;
+                try {
+                    roomtoopen = Integer.parseInt(String.valueOf(roomIds.get(position)));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+
+                    Intent intent = new Intent(getActivity(), ActivityUser.class);
+                    intent.putExtra("roomNumber",roomtoopen);
+                    try {
+                        intent.putExtra("roomName", String.valueOf(namesArray.get(position)).replace("[", "").replace("]", ""));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    startActivity(intent);
+            }
+        });
+
         list.setAdapter(new RoomAdapter());
         return view;
     }
@@ -171,6 +200,7 @@ public class RoomsFragment extends Fragment {
                 try {
                     roomData = new JSONObject(output);
                     namesArray = roomData.getJSONArray("roomnames");
+                    roomIds = roomData.getJSONArray("roomIds");
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -187,7 +217,7 @@ public class RoomsFragment extends Fragment {
                 RoomAdapter.this.notifyDataSetChanged();
 
             }
-            }.execute(ActivityMain.ServerURL+"/api/rooms/show","");
+            }.execute(ActivityMain.ServerURL+"/api/rooms/show/"+ActivityMain.userId,"");
         }
 
         @Override
@@ -207,9 +237,11 @@ public class RoomsFragment extends Fragment {
         }
         class ViewHolder {
             TextView name;
+            TextView checkInButton;
 
             ViewHolder(View v) {
                 name = (TextView) v.findViewById(R.id.roomName);
+                checkInButton = (TextView) v.findViewById(R.id.checkInButton);
             }
         }
 
@@ -227,6 +259,35 @@ public class RoomsFragment extends Fragment {
             }
             SingleRoom temp = rooms.get(i);
             holder.name.setText(temp.name);
+            final int finalposition = i;
+            final ViewHolder finalHolder = holder;
+            holder.checkInButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if(finalHolder.checkInButton.getText().equals("Check In")) {
+                        try {
+                            new GetDataInAsyncTask() {
+                                @Override
+                                protected void onPostExecute(String v) {
+                                    finalHolder.checkInButton.setText("Check Out");
+
+                                }
+                            }.execute(ActivityMain.ServerURL + "/api/checkin/" + ActivityMain.userId + "/" + String.valueOf(roomIds.get(finalposition)), "");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else{
+                            new GetDataInAsyncTask() {
+                                @Override
+                                protected void onPostExecute(String v) {
+                                    finalHolder.checkInButton.setText("Check In");
+                                }
+                            }.execute(ActivityMain.ServerURL + "/api/checkout/" + ActivityMain.userId, "");
+
+                    }
+                }
+            });
 
             return row;
         }

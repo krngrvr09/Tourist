@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.sona.tourist" >
+
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
@@ -8,7 +9,6 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-
         <activity
             android:name=".ActivityMain"
             android:label="@string/app_name" >
@@ -18,7 +18,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ActivityUser"
+            android:label="@string/title_activity_activity_user" >
+        </activity>
     </application>
-
 
 </manifest>
