@@ -1,14 +1,24 @@
 package com.example.sona.tourist;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -73,12 +83,73 @@ public class RoomsFragment extends Fragment {
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.add_room, menu);
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            // below "case" is not caausing any problems, but why should it be R.id.new_discussion
+            case R.id.add_room:
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                LayoutInflater inflater = (getActivity()).getLayoutInflater();
+                View inf = inflater.inflate(R.layout.add_room_dialog, null);
+                final EditText et1 = (EditText) inf.findViewById(R.id.AnnouncementTitle);
+                final EditText et2 = (EditText) inf.findViewById(R.id.AnnouncementBody);
+                builder.setView(inf);
+                builder.setPositiveButton("Create", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        String title = et1.getText().toString();
+                        String body = et2.getText().toString();
+
+                        String postData = "room[accessPoint]="+title+";room[name]="+body;
+
+                        new GetDataInAsyncTask(){
+                            @Override
+                            protected void onPostExecute(String v) {
+                                InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(getActivity().INPUT_METHOD_SERVICE);
+                                imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+                                RoomsFragment.this.refresh();
+                            }
+                        }.execute(ActivityMain.ServerURL+"/api/rooms/create", postData);
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                    }
+                });
+                String s="Example: Office";
+                SpannableString ss=  new SpannableString(s);
+                ss.setSpan(new ForegroundColorSpan(Color.GRAY), 0, 15, 0);
+                builder.setMessage(ss);
+                String l="Create Room";
+                SpannableString ll=  new SpannableString(l);
+                ll.setSpan(new ForegroundColorSpan(Color.BLACK), 0, 11, 0);
+                builder.setTitle(ll);
+                AlertDialog dialog = builder.create();
+                dialog.show();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public void refresh(){
+        RoomAdapter r = new RoomAdapter();
+        list.setAdapter(r);
+        ((RoomAdapter)list.getAdapter()).notifyDataSetChanged();
+    }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_rooms, container, false);
+        setHasOptionsMenu(true);
         list = (ListView) view.findViewById(R.id.roomsList);
         list.setAdapter(new RoomAdapter());
         return view;
@@ -104,6 +175,7 @@ public class RoomsFragment extends Fragment {
                     e.printStackTrace();
                 }
                 Log.d("roomnames", String.valueOf(namesArray));
+                rooms.clear();
                 for(int i=0;i<namesArray.length();i++){
                     try {
                         rooms.add(new SingleRoom(String.valueOf(namesArray.get(i))));
