@@ -5,10 +5,16 @@
     tools:context="com.example.sona.tourist.RoomsFragment">
 
     <!-- TODO: Update blank fragment layout -->
+    <android.support.v4.widget.SwipeRefreshLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/ptr_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
     <ListView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/roomsList"
         android:layout_gravity="center" />
+</android.support.v4.widget.SwipeRefreshLayout>
 </FrameLayout>

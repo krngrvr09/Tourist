@@ -2,7 +2,6 @@ package com.example.sona.tourist;
 
 import android.os.AsyncTask;
 import android.util.Log;
-import android.webkit.CookieManager;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -47,8 +46,6 @@ public class GetDataInAsyncTask extends AsyncTask<String, String, String> {
      */
     protected String getData(String url, String postData) {
 
-        String cookie = CookieManager.getInstance().getCookie(ActivityMain.ServerURL);
-//        Log.d("======================GETDATA=======",cookie);
         URL urlObject;
         HttpURLConnection urlConn = null;
         String outputData = "";
@@ -58,7 +55,6 @@ public class GetDataInAsyncTask extends AsyncTask<String, String, String> {
 //            urlConn.addRequestProperty("Authorization",
 //                    "Token token=" + ActivityMain.api_key);
 //
-//            urlConn.addRequestProperty("Cookie", cookie);
             urlConn.setDoOutput(true);
 
             if (postData != null) {

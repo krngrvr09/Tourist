@@ -4,6 +4,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,7 +29,7 @@ import java.util.ArrayList;
  * create an instance of this fragment.
  *
  */
-public class UsersFragment extends Fragment {
+public class UsersFragment extends Fragment  implements SwipeRefreshLayout.OnRefreshListener{
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -39,6 +40,8 @@ public class UsersFragment extends Fragment {
     JSONArray whereUsers;
 
     int roomNumber;
+    SwipeRefreshLayout swipeLayout;
+
     ArrayList<SingleUser> userArrayList = new ArrayList<SingleUser>();
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -81,11 +84,27 @@ public class UsersFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view =inflater.inflate(R.layout.fragment_users, container, false);
+        swipeLayout = (SwipeRefreshLayout) view.findViewById(R.id.ptr_layout);
+        swipeLayout.setOnRefreshListener(this);
+        swipeLayout.setColorScheme(R.color.backpackblue,
+                R.color.backpackorange,
+                R.color.backpackblue,
+                R.color.backpackorange);
+
         roomNumber = getArguments().getInt("roomNumber");
         list = (ListView) view.findViewById(R.id.usersList);
         list.setAdapter(new UserAdapter());
         return view;
     }
+
+    @Override
+    public void onRefresh() {
+        UserAdapter u = new UserAdapter();
+        list.setAdapter(u);
+        ((UserAdapter)list.getAdapter()).notifyDataSetChanged();
+
+    }
+
     class SingleUser{
         String name;
         int where;
@@ -117,6 +136,7 @@ public class UsersFragment extends Fragment {
                         }
                     }
                     UserAdapter.this.notifyDataSetChanged();
+                    swipeLayout.setRefreshing(false);
 
 
 

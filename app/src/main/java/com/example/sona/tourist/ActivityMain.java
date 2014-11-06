@@ -11,7 +11,7 @@ import android.widget.ListView;
 public class ActivityMain extends FragmentActivity {
     static String ServerURL = "http://192.168.53.155:3000";
     ListView list;
-    static int userId = 2;
+    static int userId = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

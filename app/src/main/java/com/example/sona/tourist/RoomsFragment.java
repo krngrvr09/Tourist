@@ -5,9 +5,13 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
@@ -23,6 +27,7 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,7 +45,7 @@ import java.util.ArrayList;
  * create an instance of this fragment.
  *
  */
-public class RoomsFragment extends Fragment {
+public class RoomsFragment extends Fragment   implements SwipeRefreshLayout.OnRefreshListener {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -52,6 +57,9 @@ public class RoomsFragment extends Fragment {
     ArrayList<SingleRoom> rooms = new ArrayList<SingleRoom>();
     int roomCheckedIn;
     boolean checkedIn;
+    AlertDialog levelDialog;
+    SwipeRefreshLayout swipeLayout;
+
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -102,10 +110,11 @@ public class RoomsFragment extends Fragment {
                 View inf = inflater.inflate(R.layout.add_room_dialog, null);
                 final EditText et1 = (EditText) inf.findViewById(R.id.AnnouncementTitle);
                 final EditText et2 = (EditText) inf.findViewById(R.id.AnnouncementBody);
+                et1.setVisibility(View.GONE);
                 builder.setView(inf);
                 builder.setPositiveButton("Create", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        String title = et1.getText().toString();
+                        String title = "1234";
                         String body = et2.getText().toString();
 
                         String postData = "room[accessPoint]="+title+";room[name]="+body;
@@ -154,6 +163,13 @@ public class RoomsFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_rooms, container, false);
+        swipeLayout = (SwipeRefreshLayout) view.findViewById(R.id.ptr_layout);
+        swipeLayout.setOnRefreshListener(this);
+        swipeLayout.setColorScheme(R.color.backpackblue,
+                R.color.backpackorange,
+                R.color.backpackblue,
+                R.color.backpackorange);
+
         setHasOptionsMenu(true);
         list = (ListView) view.findViewById(R.id.roomsList);
         list.setClickable(true);
@@ -170,21 +186,68 @@ public class RoomsFragment extends Fragment {
                 }
 
 
-                    Intent intent = new Intent(getActivity(), ActivityUser.class);
-                    intent.putExtra("roomNumber",roomtoopen);
-                    try {
-                        intent.putExtra("roomName", String.valueOf(namesArray.get(position)).replace("[", "").replace("]", ""));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
+                Intent intent = new Intent(getActivity(), ActivityUser.class);
+                intent.putExtra("roomNumber", roomtoopen);
+                try {
+                    intent.putExtra("roomName", String.valueOf(namesArray.get(position)).replace("[", "").replace("]", ""));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
 
-                    startActivity(intent);
+                startActivity(intent);
             }
         });
+        list.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                LayoutInflater inflater = (getActivity()).getLayoutInflater();
+                View inf = inflater.inflate(R.layout.join_room_dialog, null);
+                builder.setView(inf);
+                final int finalPos = i;
+                builder.setPositiveButton("Join", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
 
+                        String postData = "";
+
+                        try {
+                            new GetDataInAsyncTask(){
+                                @Override
+                                protected void onPostExecute(String v) {
+                                    RoomsFragment.this.refresh();
+                                }
+                            }.execute(ActivityMain.ServerURL+"/api/joinroom/"+ActivityMain.userId+"/"+String.valueOf(roomIds.get(finalPos)),"");
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                    }
+                });
+                String string = "Join Room";
+                SpannableString ll = new SpannableString(string);
+                ll.setSpan(new ForegroundColorSpan(Color.BLACK), 0, 9, 0);
+                builder.setTitle(ll);
+                AlertDialog dialog = builder.create();
+                dialog.show();
+                return true;
+            }
+        });
         list.setAdapter(new RoomAdapter());
         return view;
     }
+
+    @Override
+    public void onRefresh() {
+        RoomAdapter r = new RoomAdapter();
+        list.setAdapter(r);
+        ((RoomAdapter)list.getAdapter()).notifyDataSetChanged();
+    }
+
     class SingleRoom{
         String name;
         public SingleRoom(String name){
@@ -224,6 +287,7 @@ public class RoomsFragment extends Fragment {
                     }
                 }
                 RoomAdapter.this.notifyDataSetChanged();
+                swipeLayout.setRefreshing(false);
 
             }
             }.execute(ActivityMain.ServerURL+"/api/rooms/show/"+ActivityMain.userId,"");
@@ -296,6 +360,46 @@ public class RoomsFragment extends Fragment {
                             new GetDataInAsyncTask() {
                                 @Override
                                 protected void onPostExecute(String v) {
+                                    WifiManager mWiFiManager = (WifiManager) getActivity().getSystemService(getActivity().WIFI_SERVICE);
+                                    WifiInfo s = mWiFiManager.getConnectionInfo();
+                                    Log.d("bssid",s.getBSSID());
+                                    Toast.makeText(getActivity(), s.getBSSID(), Toast.LENGTH_SHORT);
+                                    final CharSequence[] items = {" Loud "," Vibrator "," Silent "};
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                                    builder.setTitle("Mac Address: "+s.getBSSID() );
+                                    builder.setSingleChoiceItems(items, -1, new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int item) {
+
+                                            AudioManager audiomanage = (AudioManager)getActivity().getSystemService(getActivity().AUDIO_SERVICE);
+                                            String type = "";
+                                            switch(item)
+                                            {
+                                                case 0:
+                                                    // Your code when first option seletced
+                                                    audiomanage.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+                                                    type = "loud";
+                                                    break;
+                                                case 1:
+                                                    // Your code when 2nd  option seletced
+                                                    audiomanage.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
+                                                    type = "vibrate";
+                                                    break;
+                                                case 2:
+                                                    // Your code when 3rd option seletced
+                                                    audiomanage.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+                                                    type="silent";
+                                                    break;
+                                            }
+                                            try {
+                                                new GetDataInAsyncTask().execute(ActivityMain.ServerURL+"/api/updatetype/"+ActivityMain.userId+"/"+String.valueOf(roomIds.get(finalposition))+"/"+type);
+                                            } catch (JSONException e) {
+                                                e.printStackTrace();
+                                            }
+                                            levelDialog.dismiss();
+                                        }
+                                    });
+                                    levelDialog = builder.create();
+                                    levelDialog.show();
                                     finalHolder.checkInButton.setText("Check Out");
                                     RoomsFragment.this.refresh();
 
